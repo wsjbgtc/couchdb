@@ -16,7 +16,7 @@
 -export([open_doc/3, open_revs/4, get_doc_info/3, get_full_doc_info/3,
     get_missing_revs/2, get_missing_revs/3, update_docs/3]).
 -export([all_docs/3, changes/3, map_view/4, reduce_view/4, group_info/2]).
--export([create_db/1, delete_db/1, reset_validation_funs/1, set_security/3,
+-export([create_db/2, delete_db/1, reset_validation_funs/1, set_security/3,
     set_revs_limit/3, create_shard_db_doc/2, delete_shard_db_doc/2]).
 -export([get_all_security/2, open_shard/2]).
 -export([compact/1, compact/2]).
@@ -70,7 +70,7 @@ changes(DbName, Options, StartVector, DbOptions) ->
     {ok, Db} ->
         StartSeq = calculate_start_seq(Db, node(), StartVector),
         Enum = fun changes_enumerator/2,
-        Opts = [{dir,Dir}],
+        Opts = [doc_info, {dir,Dir}],
         Acc0 = #cacc{
           db = Db,
           seq = StartSeq,
@@ -81,7 +81,7 @@ changes(DbName, Options, StartVector, DbOptions) ->
         },
         try
             {ok, #cacc{seq=LastSeq, pending=Pending, epochs=Epochs}} =
-                couch_db:changes_since(Db, StartSeq, Enum, Opts, Acc0),
+                couch_db:fold_changes(Db, StartSeq, Enum, Acc0, Opts),
             rexi:stream_last({complete, [
                 {seq, {LastSeq, uuid(Db), couch_db:owner_of(Epochs, LastSeq)}},
                 {pending, Pending}
@@ -144,8 +144,8 @@ fix_skip_and_limit(Args) ->
     #mrargs{skip=Skip, limit=Limit}=Args,
     Args#mrargs{skip=0, limit=Skip+Limit}.
 
-create_db(DbName) ->
-    rexi:reply(case couch_server:create(DbName, []) of
+create_db(DbName, Options) ->
+    rexi:reply(case couch_server:create(DbName, Options) of
     {ok, _} ->
         ok;
     Error ->
@@ -220,7 +220,7 @@ get_missing_revs(DbName, IdRevsList, Options) ->
         Ids = [Id1 || {Id1, _Revs} <- IdRevsList],
         {ok, lists:zipwith(fun({Id, Revs}, FullDocInfoResult) ->
             case FullDocInfoResult of
-            {ok, #full_doc_info{rev_tree=RevisionTree} = FullInfo} ->
+            #full_doc_info{rev_tree=RevisionTree} = FullInfo ->
                 MissingRevs = couch_key_tree:find_missing(RevisionTree, Revs),
                 {Id, MissingRevs, possible_ancestors(FullInfo, MissingRevs)};
             not_found ->
@@ -251,8 +251,7 @@ group_info(DbName, DDocId, DbOptions) ->
 reset_validation_funs(DbName) ->
     case get_or_create_db(DbName, []) of
     {ok, Db} ->
-        DbPid = couch_db:get_pid(Db),
-        gen_server:cast(DbPid, {load_validation_funs, undefined});
+        couch_db:reload_validation_funs(Db);
     _ ->
         ok
     end.
@@ -336,6 +335,8 @@ reduce_cb(complete, Acc) ->
     {ok, Acc}.
 
 
+changes_enumerator(#full_doc_info{} = FDI, Acc) ->
+    changes_enumerator(couch_doc:to_doc_info(FDI), Acc);
 changes_enumerator(#doc_info{id= <<"_local/", _/binary>>, high_seq=Seq}, Acc) ->
     {ok, Acc#cacc{seq = Seq, pending = Acc#cacc.pending-1}};
 changes_enumerator(DocInfo, Acc) ->
