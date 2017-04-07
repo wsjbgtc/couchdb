@@ -264,7 +264,7 @@ new_timer() ->
 -spec now_msec() -> msec().
 now_msec() ->
     {Mega, Sec, Micro} = os:timestamp(),
-    ((Mega * 1000000) + Sec) * 1000 + round(Micro / 1000).
+    ((Mega * 1000000) + Sec) * 1000 + Micro div 1000.
 
 
 -spec cleanup_table(atom(), msec()) -> non_neg_integer().
