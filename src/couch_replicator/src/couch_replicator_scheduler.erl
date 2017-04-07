@@ -389,6 +389,12 @@ pending_fold(Job, {Set, Now, Count, HealthThreshold}) ->
 
 
 % Replace Job in the accumulator if it is older than youngest job there.
+% "oldest" here means one which has been waiting to run the longest. "youngest"
+% means the one with most recent activity. The goal is to keep up to Count
+% oldest jobs during iteration. For example if there are jobs with these times
+% accumulated so far [5, 7, 11], and start time of current job is 6. Then
+% 6 < 11 is true, so 11 (youngest) is dropped and 6 inserted resulting in
+% [5, 6, 7]. In the end the result might look like [1, 2, 5], for example.
 pending_maybe_replace(Job, Set) ->
     Started = last_started(Job),
     {Youngest, YoungestJob} = gb_sets:largest(Set),
@@ -411,12 +417,12 @@ stop_jobs(Count, IsContinuous, State) ->
     Running0 = running_jobs(),
     ContinuousPred = fun(Job) -> is_continuous(Job) =:= IsContinuous end,
     Running1 = lists:filter(ContinuousPred, Running0),
-    Running2 = lists:sort(fun oldest_job_first/2, Running1),
+    Running2 = lists:sort(fun longest_running/2, Running1),
     Running3 = lists:sublist(Running2, Count),
     length([stop_job_int(Job, State) || Job <- Running3]).
 
 
-oldest_job_first(#job{} = A, #job{} = B) ->
+longest_running(#job{} = A, #job{} = B) ->
     last_started(A) =< last_started(B).
 
 
@@ -920,11 +926,11 @@ last_started_test_() ->
     ]].
 
 
-oldest_job_first_test() ->
+longest_running_test() ->
     J0 = testjob([crashed()]),
     J1 = testjob([started(1)]),
     J2 = testjob([started(2)]),
-    Sort = fun(Jobs) -> lists:sort(fun oldest_job_first/2, Jobs) end,
+    Sort = fun(Jobs) -> lists:sort(fun longest_running/2, Jobs) end,
     ?assertEqual([], Sort([])),
     ?assertEqual([J1], Sort([J1])),
     ?assertEqual([J1, J2], Sort([J2, J1])),
