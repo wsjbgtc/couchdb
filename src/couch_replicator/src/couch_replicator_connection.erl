@@ -58,7 +58,8 @@ init([]) ->
 acquire(URL) when is_binary(URL) ->
     acquire(binary_to_list(URL));
 
-acquire(URL) ->
+acquire(URL0) ->
+    URL = couch_util:url_strip_password(URL0),
     case gen_server:call(?MODULE, {acquire, URL}) of
         {ok, Worker} ->
             link(Worker),
