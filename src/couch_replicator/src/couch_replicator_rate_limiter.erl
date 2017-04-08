@@ -61,7 +61,6 @@
 
 % Definitions
 
--define(SHARDS_N, 16).
 
 % Main parameters of the algorithm. The factor is the multiplicative part and
 % base interval is the additive.
@@ -128,8 +127,7 @@ success(Key) ->
 % gen_server callbacks
 
 init([]) ->
-    Opts = [named_table, public, {keypos, #rec.id}, {read_concurrency, true}],
-    [ets:new(list_to_atom(TableName), Opts) || TableName <- table_names()],
+    couch_replicator_rate_limiter_tables:create(#rec.id),
     {ok, #state{timer = new_timer()}}.
 
 
@@ -147,7 +145,8 @@ handle_cast(_, State) ->
 
 handle_info(cleanup, #state{timer = Timer}) ->
     timer:cancel(Timer),
-    TIds = [list_to_existing_atom(TableName) || TableName <- table_names()],
+    TableNames = couch_replicator_rate_limiter_tables:table_names(),
+    TIds = [list_to_existing_atom(TableName) || TableName <- TableNames],
     [cleanup_table(TId, now_msec() - ?MAX_INTERVAL) || TId <- TIds],
     {noreply, #state{timer = new_timer()}}.
 
@@ -172,7 +171,8 @@ update_success(Key, Interval, Timestamp, Now) ->
     NewInterval = DecayedInterval - AdditiveFactor,
     if
         NewInterval =< 0 ->
-            ets:delete(term_to_table(Key), Key),
+            Table = couch_replicator_rate_limiter_tables:term_to_table(Key),
+            ets:delete(Table, Key),
             0;
         NewInterval =< ?BASE_INTERVAL ->
             insert(Key, ?BASE_INTERVAL, Now);
@@ -196,13 +196,15 @@ update_failure(Key, Interval, _Timestamp, Now) ->
 -spec insert(any(), interval(), msec()) -> interval().
 insert(Key, Interval, Timestamp) ->
     Entry = #rec{id = Key, backoff = Interval, ts = Timestamp},
-    ets:insert(term_to_table(Key), Entry),
+    Table = couch_replicator_rate_limiter_tables:term_to_table(Key),
+    ets:insert(Table, Entry),
     Interval.
 
 
 -spec interval_and_timestamp(key()) -> {interval(), msec()}.
 interval_and_timestamp(Key) ->
-    case ets:lookup(term_to_table(Key), Key) of
+    Table = couch_replicator_rate_limiter_tables:term_to_table(Key),
+    case ets:lookup(Table, Key) of
         [] ->
             {0, 0};
         [#rec{backoff = Interval, ts = Timestamp}] ->
@@ -237,22 +239,6 @@ additive_factor(Interval) when Interval > 100 ->
 
 additive_factor(_Interval) ->
     ?BASE_INTERVAL.
-
-
--spec table_name(non_neg_integer()) -> string().
-table_name(Id) when is_integer(Id), Id >= 0 andalso Id < ?SHARDS_N ->
-    atom_to_list(?MODULE) ++ "_" ++ integer_to_list(Id).
-
-
--spec table_names() -> [string()].
-table_names() ->
-    [table_name(N) || N <- lists:seq(0, ?SHARDS_N - 1)].
-
-
--spec term_to_table(any()) -> atom().
-term_to_table(Term) ->
-    PHash = erlang:phash2(Term),
-    list_to_existing_atom(table_name(PHash rem ?SHARDS_N)).
 
 
 -spec new_timer() -> timer:tref().
