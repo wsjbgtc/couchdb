@@ -30,7 +30,7 @@
 
 % public API
 -export([start_link/0, owner/2, is_stable/0]).
--export([link_cluster_event_listener/1]).
+-export([link_cluster_event_listener/3]).
 
 % gen_server callbacks
 -export([init/1, handle_call/3, handle_info/2, handle_cast/2,
@@ -81,12 +81,11 @@ is_stable() ->
     gen_server:call(?MODULE, is_stable).
 
 
-% Convenience function for gen_servers to subscribe to {cluster, stable} and
-% {cluster, unstable} events from couch_replicator clustering module.
--spec link_cluster_event_listener(pid()) -> pid().
-link_cluster_event_listener(GenServer) when is_pid(GenServer) ->
+-spec link_cluster_event_listener(atom(), atom(), list()) -> pid().
+link_cluster_event_listener(Mod, Fun, Args)
+        when is_atom(Mod), is_atom(Fun), is_list(Args) ->
     CallbackFun =
-        fun(Event = {cluster, _}) -> gen_server:cast(GenServer, Event);
+        fun(Event = {cluster, _}) -> erlang:apply(Mod, Fun, Args ++ [Event]);
            (_) -> ok
         end,
     {ok, Pid} = couch_replicator_notifier:start_link(CallbackFun),

@@ -18,11 +18,17 @@
 -export([init/1, handle_call/3, handle_info/2, handle_cast/2]).
 -export([code_change/3, terminate/2]).
 
+-export([notify_cluster_event/2]).
 
 -record(state, {
    event_listener :: pid(),
    mdb_changes :: pid() | nil
 }).
+
+
+-spec notify_cluster_event(pid(), {cluster, any()}) -> ok.
+notify_cluster_event(Server, {cluster, _} = Event) ->
+    gen_server:cast(Server, Event).
 
 
 -spec start_link() ->
@@ -32,7 +38,8 @@ start_link() ->
 
 
 init([]) ->
-    EvtPid = couch_replicator_clustering:link_cluster_event_listener(self()),
+    EvtPid = couch_replicator_clustering:link_cluster_event_listener(?MODULE,
+        notify_cluster_event, [self()]),
     State = #state{event_listener = EvtPid, mdb_changes = nil},
     case couch_replicator_clustering:is_stable() of
         true ->

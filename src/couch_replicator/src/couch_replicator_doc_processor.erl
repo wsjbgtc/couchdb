@@ -17,6 +17,7 @@
 -export([docs/1, doc/2]).
 -export([update_docs/0]).
 -export([get_worker_ref/1]).
+-export([notify_cluster_event/2]).
 
 % multidb changes callback
 -export([db_created/2, db_deleted/2, db_found/2, db_change/3]).
@@ -101,6 +102,12 @@ get_worker_ref({DbName, DocId}) when is_binary(DbName), is_binary(DocId) ->
     end.
 
 
+% Cluster membership change notification callback
+-spec notify_cluster_event(pid(), {cluster, any()}) -> ok.
+notify_cluster_event(Server, {cluster, _} = Event) ->
+    gen_server:cast(Server, Event).
+
+
 % Private helpers for multidb changes API, these updates into the doc
 % processor gen_server
 
@@ -179,7 +186,8 @@ start_link() ->
 
 init([]) ->
     ?MODULE = ets:new(?MODULE, [ordered_set, named_table, {keypos, #rdoc.id}]),
-    couch_replicator_clustering:link_cluster_event_listener(self()),
+    couch_replicator_clustering:link_cluster_event_listener(?MODULE,
+        notify_cluster_event, [self()]),
     {ok, nil}.
 
 
@@ -818,7 +826,7 @@ setup() ->
     meck:expect(config, get, fun(_, _, Default) -> Default end),
     meck:expect(config, listen_for_changes, 2, ok),
     meck:expect(couch_replicator_clustering, owner, 2, node()),
-    meck:expect(couch_replicator_clustering, link_cluster_event_listener, 1, ok),
+    meck:expect(couch_replicator_clustering, link_cluster_event_listener, 3, ok),
     meck:expect(couch_replicator_doc_processor_worker, spawn_worker, 4, pid),
     meck:expect(couch_replicator_scheduler, remove_job, 1, ok),
     meck:expect(couch_replicator_docs, remove_state_fields, 2, ok),
