@@ -135,7 +135,7 @@ handle_info({'EXIT', From, Reason}, #state{scanner = From} = State) ->
     {stop, {scanner_died, Reason}, State};
 
 handle_info({'EXIT', From, Reason}, #state{pids = Pids} = State) ->
-    couch_log:info("~p change feed exited ~p",[State#state.suffix, From]),
+    couch_log:debug("~p change feed exited ~p",[State#state.suffix, From]),
     case lists:keytake(From, 2, Pids) of
         {value, {DbName, From}, NewPids} ->
             if Reason == normal -> ok; true ->
