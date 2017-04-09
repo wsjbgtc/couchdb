@@ -17,11 +17,11 @@
 %
 % Cluster stability is defined as "there have been no nodes added or removed in
 % last `QuietPeriod` seconds". QuietPeriod value is configurable. To ensure a
-% speedier startup, during initialization there is a shorter StartupQuietPeriod in
-% effect (also configurable).
+% speedier startup, during initialization there is a shorter StartupPeriod
+% in effect (also configurable).
 %
-% This module is also in charge of calculating ownership of replications based on
-% where their _repicator db documents shards live.
+% This module is also in charge of calculating ownership of replications based
+% on where their _replicator db documents shards live.
 
 
 -module(couch_replicator_clustering).
@@ -145,7 +145,7 @@ handle_info(stability_check, State) ->
        true ->
            couch_replicator_notifier:notify({cluster, stable}),
            couch_stats:update_gauge([couch_replicator, cluster_is_stable], 1),
-           couch_log:notice("~s : publishing cluster `stable` event", [?MODULE]),
+           couch_log:notice("~s : publish cluster `stable` event", [?MODULE]),
            {noreply, State};
        false ->
            Timer = new_timer(interval(State)),

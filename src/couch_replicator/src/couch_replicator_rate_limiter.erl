@@ -24,7 +24,8 @@
 % The algorithm referenced above estimates a rate, whereas the implemented
 % algorithm uses an interval (in milliseconds). It preserves the original
 % semantics, that is the failure part is multplicative and the success part is
-% additive. The relationship between rate and interval is: rate = 1000 / interval.
+% additive. The relationship between rate and interval is: rate = 1000 /
+% interval.
 %
 % There are two main API functions:
 %
@@ -79,8 +80,8 @@
 % would become less accurate as more time passes. In such case choose to
 % optimistically decay the estimated value. That is assume there a certain
 % rate of successful requests happened. (For reference, TCP congestion algorithm
-% also handles a variation of this in RFC 5681 under "Restarting Idle Connections"
-% section).
+% also handles a variation of this in RFC 5681 under "Restarting Idle
+% Connections" section).
 -define(TIME_DECAY_FACTOR, 2).
 -define(TIME_DECAY_THRESHOLD, 1000).
 

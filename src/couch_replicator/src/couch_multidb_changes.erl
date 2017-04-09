@@ -35,7 +35,7 @@
     suffix :: binary(),
     event_server :: reference(),
     scanner :: nil | pid(),
-    pids :: [{binary(),pid()}],
+    pids :: [{binary(), pid()}],
     skip_ddocs :: boolean()
 }).
 
@@ -135,7 +135,7 @@ handle_info({'EXIT', From, Reason}, #state{scanner = From} = State) ->
     {stop, {scanner_died, Reason}, State};
 
 handle_info({'EXIT', From, Reason}, #state{pids = Pids} = State) ->
-    couch_log:debug("~p change feed exited ~p",[State#state.suffix, From]),
+    couch_log:debug("~p change feed exited ~p", [State#state.suffix, From]),
     case lists:keytake(From, 2, Pids) of
         {value, {DbName, From}, NewPids} ->
             if Reason == normal -> ok; true ->
@@ -479,7 +479,7 @@ t_handle_info_scanner_crashed() ->
 t_handle_info_event_server_exited() ->
     ?_test(begin
         Res = handle_info({'DOWN', esref, type, espid, reason}, mock_state()),
-        ?assertMatch({stop, {couch_event_server_died, reason},_}, Res)
+        ?assertMatch({stop, {couch_event_server_died, reason}, _}, Res)
     end).
 
 t_handle_info_unknown_pid_exited() ->

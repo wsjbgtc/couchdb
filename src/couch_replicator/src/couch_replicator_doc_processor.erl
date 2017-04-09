@@ -156,8 +156,8 @@ process_updated({DbName, _DocId} = Id, JsonRepDoc) ->
     % Parsing replication doc (but not calculating the id) could throw an
     % exception which would indicate this document is malformed. This exception
     % should propagate to db_change function and will be recorded as permanent
-    % failure in the document. User will have to delete and re-create the document
-    % to fix the problem.
+    % failure in the document. User will have to delete and re-create the
+    % document to fix the problem.
     Rep0 = couch_replicator_docs:parse_rep_doc_without_id(JsonRepDoc),
     Rep = Rep0#rep{db_name = DbName, start_time = os:timestamp()},
     Filter = case couch_replicator_filters:parse(Rep#rep.options) of
@@ -320,20 +320,23 @@ worker_returned(Ref, Id, {ok, RepId}) ->
                 % Filtered replication id didn't change.
                 Row0;
             #rdoc{rid = nil, filter = user} ->
-                % Calculated new replication id for a filtered replication. Make sure
-                % to schedule another check as filter code could change. Replications
-                % starts could have been failing, so also clear error count.
+                % Calculated new replication id for a filtered replication. Make
+                % sure to schedule another check as filter code could change.
+                % Replication starts could have been failing, so also clear
+                % error count.
                 Row0#rdoc{rid = RepId};
             #rdoc{rid = OldRepId, filter = user} ->
-                % Replication id of existing replication job with filter has changed.
-                % Remove old replication job from scheduler and schedule check to check
-                % for future changes.
+                % Replication id of existing replication job with filter has
+                % changed. Remove old replication job from scheduler and
+                % schedule check to check for future changes.
                 ok = couch_replicator_scheduler:remove_job(OldRepId),
-                Msg = io_lib:format("Replication id changed: ~p -> ~p", [OldRepId, RepId]),
+                Msg = io_lib:format("Replication id changed: ~p -> ~p", [
+                    OldRepId, RepId]),
                 Row0#rdoc{rid = RepId, info = couch_util:to_binary(Msg)};
             #rdoc{rid = nil} ->
-                % Calculated new replication id for non-filtered replication. Remove
-                % replication doc body, after this we won't needed any more.
+                % Calculated new replication id for non-filtered replication.
+                % Remove replication doc body, after this we won't needed any
+                % more.
                 Row0#rdoc{rep=nil, rid=RepId, info=nil}
         end,
         true = ets:insert(?MODULE, NewRow),
@@ -710,8 +713,8 @@ t_failed_change() ->
     end).
 
 
-% Normal change, but according to cluster ownership algorithm, replication belongs to
-% a different node, so this node should skip it.
+% Normal change, but according to cluster ownership algorithm, replication
+% belongs to a different node, so this node should skip it.
 t_change_for_different_node() ->
    ?_test(begin
         meck:expect(couch_replicator_clustering, owner, 2, different_node),
@@ -721,7 +724,8 @@ t_change_for_different_node() ->
 
 
 % Change handled when cluster is unstable (nodes are added or removed), so
-% job is not added. A rescan will be triggered soon and change will be evaluated again.
+% job is not added. A rescan will be triggered soon and change will be
+% evaluated again.
 t_change_when_cluster_unstable() ->
    ?_test(begin
        meck:expect(couch_replicator_clustering, owner, 2, unstable),
@@ -739,8 +743,10 @@ t_ejson_docs() ->
         EJsonDocs = docs([]),
         ?assertMatch([{[_|_]}], EJsonDocs),
         [{DocProps}] = EJsonDocs,
-        {value, StateTime, DocProps1} = lists:keytake(last_updated, 1, DocProps),
-        ?assertMatch({last_updated, BinVal1} when is_binary(BinVal1), StateTime),
+        {value, StateTime, DocProps1} = lists:keytake(last_updated, 1,
+            DocProps),
+        ?assertMatch({last_updated, BinVal1} when is_binary(BinVal1),
+            StateTime),
         {value, StartTime, DocProps2} = lists:keytake(start_time, 1, DocProps1),
         ?assertMatch({start_time, BinVal2} when is_binary(BinVal2), StartTime),
         ExpectedProps = [
@@ -774,7 +780,9 @@ t_cluster_membership_foldl() ->
 normalize_rep_test_() ->
     {
         setup,
-        fun() -> meck:expect(config, get, fun(_, _, Default) -> Default end) end,
+        fun() -> meck:expect(config, get,
+            fun(_, _, Default) -> Default end)
+        end,
         fun(_) -> meck:unload() end,
         ?_test(begin
             EJson1 = {[
@@ -800,7 +808,9 @@ normalize_rep_test_() ->
 get_worker_ref_test_() ->
     {
         setup,
-        fun() -> ets:new(?MODULE, [named_table, public, {keypos, #rdoc.id}]) end,
+        fun() ->
+            ets:new(?MODULE, [named_table, public, {keypos, #rdoc.id}])
+        end,
         fun(_) -> ets:delete(?MODULE) end,
         ?_test(begin
             Id = {<<"db">>, <<"doc">>},
@@ -825,7 +835,8 @@ setup() ->
     meck:expect(config, get, fun(_, _, Default) -> Default end),
     meck:expect(config, listen_for_changes, 2, ok),
     meck:expect(couch_replicator_clustering, owner, 2, node()),
-    meck:expect(couch_replicator_clustering, link_cluster_event_listener, 3, ok),
+    meck:expect(couch_replicator_clustering, link_cluster_event_listener, 3,
+        ok),
     meck:expect(couch_replicator_doc_processor_worker, spawn_worker, 4, pid),
     meck:expect(couch_replicator_scheduler, remove_job, 1, ok),
     meck:expect(couch_replicator_docs, remove_state_fields, 2, ok),

@@ -17,11 +17,11 @@
 %
 % Cluster stability is defined as "there have been no nodes added or removed in
 % last `QuietPeriod` seconds". QuietPeriod value is configurable. To ensure a
-% speedier startup, during initialization there is a shorter StartupQuietPeriod in
-% effect (also configurable).
+% speedier startup, during initialization there is a shorter StartupQuietPeriod
+% in effect (also configurable).
 %
-% This module is also in charge of calculating ownership of replications based on
-% where their _repicator db documents shards live.
+% This module is also in charge of calculating ownership of replications based
+% on where their _repicator db documents shards live.
 
 -module(couch_replicator_rate_limiter_tables).
 

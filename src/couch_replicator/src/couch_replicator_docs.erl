@@ -81,7 +81,8 @@ update_failed(DbName, DocId, Error) ->
         {<<"_replication_state">>, <<"failed">>},
         {<<"_replication_stats">>, undefined},
         {<<"_replication_state_reason">>, Reason}]),
-    couch_stats:increment_counter([couch_replicator, docs, failed_state_updates]).
+    couch_stats:increment_counter([couch_replicator, docs,
+        failed_state_updates]).
 
 
 -spec update_triggered(#rep{}, rep_id()) -> ok.
@@ -117,7 +118,8 @@ update_error(#rep{db_name = DbName, doc_id = DocId, id = RepId}, Error) ->
 
 -spec ensure_rep_db_exists() -> {ok, #db{}}.
 ensure_rep_db_exists() ->
-    Db = case couch_db:open_int(?REP_DB_NAME, [?CTX, sys_db, nologifmissing]) of
+    Db = case couch_db:open_int(?REP_DB_NAME, [?CTX, sys_db,
+            nologifmissing]) of
         {ok, Db0} ->
             Db0;
         _Error ->
@@ -205,9 +207,9 @@ replication_design_doc_props(DDocId) ->
 % Note: parse_rep_doc can handle filtered replications. During parsing of the
 % replication doc it will make possibly remote http requests to the source
 % database. If failure or parsing of filter docs fails, parse_doc throws a
-% {filter_fetch_error, Error} excation. This exception should be considered transient
-% in respect to the contents of the document itself, since it depends on
-% netowrk availability of the source db and other factors.
+% {filter_fetch_error, Error} excation. This exception should be considered
+% transient in respect to the contents of the document itself, since it depends
+% on netowrk availability of the source db and other factors.
 -spec parse_rep_doc({[_]}) -> #rep{}.
 parse_rep_doc(RepDoc) ->
     {ok, Rep} = try
@@ -313,7 +315,7 @@ update_rep_doc(RepDbName, RepDocId, KVs, Wait) when is_binary(RepDocId) ->
         end
     catch
         throw:conflict ->
-            Msg = "Conflict when updating replication document `~s`. Retrying.",
+            Msg = "Conflict when updating replication doc `~s`. Retrying.",
             couch_log:error(Msg, [RepDocId]),
             ok = timer:sleep(random:uniform(erlang:min(128, Wait)) * 100),
             update_rep_doc(RepDbName, RepDocId, KVs, Wait * 2)
@@ -399,7 +401,8 @@ parse_rep_db({Props}, Proxy, Options) ->
             consumer_key = ?b2l(get_value(<<"consumer_key">>, OauthProps)),
             token = ?b2l(get_value(<<"token">>, OauthProps)),
             token_secret = ?b2l(get_value(<<"token_secret">>, OauthProps)),
-            consumer_secret = ?b2l(get_value(<<"consumer_secret">>, OauthProps)),
+            consumer_secret = ?b2l(get_value(<<"consumer_secret">>,
+                OauthProps)),
             signature_method =
                 case get_value(<<"signature_method">>, OauthProps) of
                 undefined ->        hmac_sha1;
@@ -452,7 +455,8 @@ make_options(Props) ->
     DefTimeout = config:get("replicator", "connection_timeout", "30000"),
     DefRetries = config:get("replicator", "retries_per_request", "10"),
     UseCheckpoints = config:get("replicator", "use_checkpoints", "true"),
-    DefCheckpointInterval = config:get("replicator", "checkpoint_interval", "30000"),
+    DefCheckpointInterval = config:get("replicator", "checkpoint_interval",
+        "30000"),
     {ok, DefSocketOptions} = couch_util:parse_term(
         config:get("replicator", "socket_options",
             "[{keepalive, true}, {nodelay, false}]")),
@@ -536,7 +540,8 @@ check_options(Options) ->
         {false, _, false} -> Options;
         {_, false, false} -> Options;
         _ ->
-            throw({bad_request, "`doc_ids`, `filter`, `selector` are mutually exclusive options"})
+            throw({bad_request,
+                "`doc_ids`,`filter`,`selector` are mutually exclusive"})
     end.
 
 -spec parse_proxy_params(binary() | [_]) -> [_].
@@ -688,7 +693,7 @@ error_reason(Reason) ->
 
 check_options_pass_values_test() ->
     ?assertEqual(check_options([]), []),
-    ?assertEqual(check_options([baz, {other,fiz}]), [baz, {other, fiz}]),
+    ?assertEqual(check_options([baz, {other, fiz}]), [baz, {other, fiz}]),
     ?assertEqual(check_options([{doc_ids, x}]), [{doc_ids, x}]),
     ?assertEqual(check_options([{filter, x}]), [{filter, x}]),
     ?assertEqual(check_options([{selector, x}]), [{selector, x}]).

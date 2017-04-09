@@ -47,9 +47,11 @@ start_link() ->
 
 init([]) ->
     process_flag(trap_exit, true),
-    ?MODULE = ets:new(?MODULE, [named_table, public, {keypos, #connection.worker}]),
+    ?MODULE = ets:new(?MODULE, [named_table, public,
+        {keypos, #connection.worker}]),
     ok = config:listen_for_changes(?MODULE, nil),
-    Interval = config:get_integer("replicator", "connection_close_interval", ?DEFAULT_CLOSE_INTERVAL),
+    Interval = config:get_integer("replicator", "connection_close_interval",
+        ?DEFAULT_CLOSE_INTERVAL),
     {ok, Timer} = timer:send_after(Interval, close_idle_connections),
     ibrowse:add_config([{inactivity_timeout, Interval}]),
     {ok, #state{close_interval=Interval, timer=Timer}}.
@@ -82,12 +84,15 @@ handle_call({acquire, URL}, From, State) ->
     {Pid, _Ref} = From,
     case ibrowse_lib:parse_url(URL) of
         #url{host=Host, port=Port} ->
-            case ets:match_object(?MODULE, #connection{host=Host, port=Port, mref=undefined, _='_'}, 1) of
+            Pat = #connection{host=Host, port=Port, mref=undefined, _='_'},
+            case ets:match_object(?MODULE, Pat, 1) of
                 '$end_of_table' ->
                     {reply, {error, all_allocated}, State};
                 {[Worker], _Cont} ->
-                    couch_stats:increment_counter([couch_replicator, connection, acquires]),
-                    ets:insert(?MODULE, Worker#connection{mref=monitor(process, Pid)}),
+                    couch_stats:increment_counter([couch_replicator, connection,
+                        acquires]),
+                    ets:insert(?MODULE, Worker#connection{mref=monitor(process,
+                        Pid)}),
                     {reply, {ok, Worker#connection.worker}, State}
             end;
         {error, invalid_uri} ->
@@ -99,10 +104,12 @@ handle_call({create, URL, Worker}, From, State) ->
     case ibrowse_lib:parse_url(URL) of
         #url{host=Host, port=Port} ->
             link(Worker),
-            couch_stats:increment_counter([couch_replicator, connection, creates]),
+            couch_stats:increment_counter([couch_replicator, connection,
+                creates]),
             true = ets:insert_new(
                 ?MODULE,
-                #connection{host=Host, port=Port, worker=Worker, mref=monitor(process, Pid)}
+                #connection{host=Host, port=Port, worker=Worker,
+                    mref=monitor(process, Pid)}
             ),
             {reply, ok, State}
     end.
@@ -131,13 +138,15 @@ handle_cast({connection_close_interval, V}, State) ->
 
 % owner crashed
 handle_info({'DOWN', Ref, process, _Pid, _Reason}, State) ->
-    couch_stats:increment_counter([couch_replicator, connection, owner_crashes]),
+    couch_stats:increment_counter([couch_replicator, connection,
+        owner_crashes]),
     ets:match_delete(?MODULE, #connection{mref=Ref, _='_'}),
     {noreply, State};
 
 % worker crashed
 handle_info({'EXIT', Pid, Reason}, State) ->
-    couch_stats:increment_counter([couch_replicator, connection, worker_crashes]),
+    couch_stats:increment_counter([couch_replicator, connection,
+        worker_crashes]),
     case ets:lookup(?MODULE, Pid) of
         [] ->
             ok;

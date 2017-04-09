@@ -25,11 +25,14 @@
 % Spawn a worker which attempts to calculate replication id then add a
 % replication job to scheduler. This function create a monitor to the worker
 % a worker will then exit with the #doc_worker_result{} record within
-% ?WORKER_TIMEOUT_MSEC timeout period.A timeout is considered a `temporary_error`.
-% Result will be sent as the `Reason` in the {'DOWN',...} message.
+% ?WORKER_TIMEOUT_MSEC timeout period.A timeout is considered a
+%`temporary_error`. Result will be sent as the `Reason` in the {'DOWN',...}
+% message.
 -spec spawn_worker(db_doc_id(), #rep{}, seconds(), reference()) -> pid().
 spawn_worker(Id, Rep, WaitSec, WRef) ->
-    {Pid, _Ref} = spawn_monitor(fun() -> worker_fun(Id, Rep, WaitSec, WRef) end),
+    {Pid, _Ref} = spawn_monitor(fun() ->
+        worker_fun(Id, Rep, WaitSec, WRef)
+    end),
     Pid.
 
 
@@ -66,8 +69,8 @@ worker_fun(Id, Rep, WaitSec, WRef) ->
 
 
 % Try to start a replication. Used by a worker. This function should return
-% rep_start_result(), also throws {filter_fetch_error, Reason} if cannot fetch filter.
-% It can also block for an indeterminate amount of time while fetching the
+% rep_start_result(), also throws {filter_fetch_error, Reason} if cannot fetch
+% filter.It can also block for an indeterminate amount of time while fetching
 % filter.
 maybe_start_replication(Id, RepWithoutId, WRef) ->
     Rep = couch_replicator_docs:update_rep_id(RepWithoutId),
@@ -93,8 +96,8 @@ maybe_add_job_to_scheduler({DbName, DocId}, Rep, WRef) ->
     nil ->
         % Before adding a job check that this worker is still the current
         % worker. This is to handle a race condition where a worker which was
-        % sleeping and then checking a replication filter may inadvertently re-add
-        % a replication which was already deleted.
+        % sleeping and then checking a replication filter may inadvertently
+        % re-add a replication which was already deleted.
         case couch_replicator_doc_processor:get_worker_ref({DbName, DocId}) of
         WRef ->
             ok = couch_replicator_scheduler:add_job(Rep),
@@ -164,13 +167,14 @@ t_already_running_same_docid() ->
    end).
 
 
-% There is a transient replication with same replication id running. Ignore change.
+% There is a transient replication with same replication id running. Ignore.
 t_already_running_transient() ->
    ?_test(begin
        Id = {?DB, ?DOC1},
        mock_already_running(null, null),
        Rep = couch_replicator_docs:parse_rep_doc_without_id(change()),
-       ?assertMatch({temporary_error, _}, maybe_start_replication(Id, Rep, nil)),
+       ?assertMatch({temporary_error, _}, maybe_start_replication(Id, Rep,
+           nil)),
        ?assert(did_not_add_job())
    end).
 
@@ -182,7 +186,8 @@ t_already_running_other_db_other_doc() ->
        Id = {?DB, ?DOC1},
        mock_already_running(<<"otherdb">>, <<"otherdoc">>),
        Rep = couch_replicator_docs:parse_rep_doc_without_id(change()),
-       ?assertMatch({permanent_failure, _}, maybe_start_replication(Id, Rep, nil)),
+       ?assertMatch({permanent_failure, _}, maybe_start_replication(Id, Rep,
+           nil)),
        ?assert(did_not_add_job()),
        1 == meck:num_calls(couch_replicator_docs, update_failed, '_')
    end).
@@ -222,7 +227,8 @@ t_ignore_if_worker_ref_does_not_match() ->
     ?_test(begin
        Id = {?DB, ?DOC1},
        Rep = couch_replicator_docs:parse_rep_doc_without_id(change()),
-       meck:expect(couch_replicator_doc_processor, get_worker_ref, 1, make_ref()),
+       meck:expect(couch_replicator_doc_processor, get_worker_ref, 1,
+           make_ref()),
        ?assertEqual(ignore, maybe_start_replication(Id, Rep, make_ref())),
        ?assertNot(added_job())
    end).

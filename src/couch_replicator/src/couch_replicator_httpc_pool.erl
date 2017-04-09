@@ -108,7 +108,8 @@ handle_info({'EXIT', Pid, _Reason}, State) ->
         Workers2 ->
             case queue:out(Waiting) of
                 {empty, _} ->
-                    {noreply, State#state{workers = Workers2, callers = NewCallers0}};
+                    {noreply, State#state{workers = Workers2,
+                        callers = NewCallers0}};
                 {{value, From}, Waiting2} ->
                     {ok, Worker} = couch_replicator_connection:acquire(Url),
                     NewCallers1 = monitor_client(NewCallers0, Worker, From),

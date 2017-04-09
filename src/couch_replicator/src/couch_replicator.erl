@@ -27,7 +27,7 @@
     error,         % Could not be turned into a replication job
     running,       % Scheduled and running
     pending,       % Scheduled and waiting to run
-    crashing,      % Scheduled but crashing, possibly backed off by the scheduler
+    crashing,      % Scheduled but crashing, backed off by the scheduler
     completed,     % Non-continuous (normal) completed replication
     failed         % Terminal failure, will not be retried anymore
 ]).
@@ -144,7 +144,8 @@ replication_states() ->
     ?REPLICATION_STATES.
 
 
--spec stream_terminal_docs_info(binary(), user_doc_cb(), any(), [atom()]) -> any().
+-spec stream_terminal_docs_info(binary(), user_doc_cb(), any(), [atom()]) ->
+    any().
 stream_terminal_docs_info(Db, Cb, UserAcc, States) ->
     DDoc = <<"_replicator">>,
     View = <<"terminal_states">>,
@@ -172,7 +173,8 @@ stream_active_docs_info(Cb, UserAcc, States) ->
     stream_active_docs_info(Nodes, Cb, UserAcc, States).
 
 
--spec stream_active_docs_info([node()], user_doc_cb(), any(), [atom()]) -> any().
+-spec stream_active_docs_info([node()], user_doc_cb(), any(), [atom()]) ->
+    any().
 stream_active_docs_info([], _Cb, UserAcc, _States) ->
     UserAcc;
 
@@ -366,7 +368,8 @@ t_username_must_match() ->
         UserCtx1 = #user_ctx{name = <<"user">>, roles = [<<"somerole">>]},
         ?assertEqual(ok, check_authorization(<<"RepId">>, UserCtx1)),
         UserCtx2 = #user_ctx{name = <<"other">>, roles = [<<"somerole">>]},
-        ?assertThrow({unauthorized, _}, check_authorization(<<"RepId">>, UserCtx2))
+        ?assertThrow({unauthorized, _}, check_authorization(<<"RepId">>,
+            UserCtx2))
     end).
 
 
@@ -391,7 +394,9 @@ expect_rep_user_ctx(Name, Role) ->
 strip_url_creds_test_() ->
      {
         foreach,
-        fun () -> meck:expect(config, get, fun(_, _, Default) -> Default end) end,
+        fun () -> meck:expect(config, get,
+            fun(_, _, Default) -> Default end)
+        end,
         fun (_) -> meck:unload() end,
         [
             t_strip_local_db_creds(),

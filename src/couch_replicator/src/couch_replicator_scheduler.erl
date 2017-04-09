@@ -127,7 +127,8 @@ job_summary(JobId, HealthThreshold) ->
                 {info, Info},
                 {error_count, ErrorCount},
                 {last_updated, last_updated(History)},
-                {start_time, couch_replicator_utils:iso8601(Rep#rep.start_time)},
+                {start_time,
+                    couch_replicator_utils:iso8601(Rep#rep.start_time)},
                 {proxy, job_proxy_url(Rep#rep.source)}
             ];
         {error, not_found} ->
@@ -170,10 +171,13 @@ init(_) ->
     EtsOpts = [named_table, {read_concurrency, true}, {keypos, #job.id}],
     ?MODULE = ets:new(?MODULE, EtsOpts),
     ok = config:listen_for_changes(?MODULE, nil),
-    Interval = config:get_integer("replicator", "interval", ?DEFAULT_SCHEDULER_INTERVAL),
+    Interval = config:get_integer("replicator", "interval",
+        ?DEFAULT_SCHEDULER_INTERVAL),
     MaxJobs = config:get_integer("replicator", "max_jobs", ?DEFAULT_MAX_JOBS),
-    MaxChurn = config:get_integer("replicator", "max_churn", ?DEFAULT_MAX_CHURN),
-    MaxHistory = config:get_integer("replicator", "max_history", ?DEFAULT_MAX_HISTORY),
+    MaxChurn = config:get_integer("replicator", "max_churn",
+        ?DEFAULT_MAX_CHURN),
+    MaxHistory = config:get_integer("replicator", "max_history",
+        ?DEFAULT_MAX_HISTORY),
     {ok, Timer} = timer:send_after(Interval, reschedule),
     State = #state{
         interval = Interval,
@@ -206,19 +210,23 @@ handle_call(_, _From, State) ->
     {noreply, State}.
 
 
-handle_cast({set_max_jobs, MaxJobs}, State) when is_integer(MaxJobs), MaxJobs >= 0 ->
+handle_cast({set_max_jobs, MaxJobs}, State) when is_integer(MaxJobs),
+        MaxJobs >= 0 ->
     couch_log:notice("~p: max_jobs set to ~B", [?MODULE, MaxJobs]),
     {noreply, State#state{max_jobs = MaxJobs}};
 
-handle_cast({set_max_churn, MaxChurn}, State) when is_integer(MaxChurn), MaxChurn > 0 ->
+handle_cast({set_max_churn, MaxChurn}, State) when is_integer(MaxChurn),
+        MaxChurn > 0 ->
     couch_log:notice("~p: max_churn set to ~B", [?MODULE, MaxChurn]),
     {noreply, State#state{max_churn = MaxChurn}};
 
-handle_cast({set_max_history, MaxHistory}, State) when is_integer(MaxHistory), MaxHistory > 0 ->
+handle_cast({set_max_history, MaxHistory}, State) when is_integer(MaxHistory),
+        MaxHistory > 0 ->
     couch_log:notice("~p: max_history set to ~B", [?MODULE, MaxHistory]),
     {noreply, State#state{max_history = MaxHistory}};
 
-handle_cast({set_interval, Interval}, State) when is_integer(Interval), Interval > 0 ->
+handle_cast({set_interval, Interval}, State) when is_integer(Interval),
+        Interval > 0 ->
     couch_log:notice("~p: interval set to ~B", [?MODULE, Interval]),
     {noreply, State#state{interval = Interval}};
 
@@ -470,7 +478,8 @@ consecutive_crashes([{{crashed, _}, CrashT}, {_, PrevT} = PrevEvent | Rest],
             consecutive_crashes([PrevEvent | Rest], HealthThreshold, Count + 1)
     end;
 
-consecutive_crashes([{stopped, _}, {started, _} | _], _HealthThreshold, Count) ->
+consecutive_crashes([{stopped, _}, {started, _} | _], _HealthThreshold,
+        Count) ->
     Count;
 
 consecutive_crashes([_ | Rest], HealthThreshold, Count) ->
@@ -507,7 +516,8 @@ maybe_remove_job_int(JobId, State) ->
             true = remove_job_int(Job),
             couch_stats:increment_counter([couch_replicator, jobs, removes]),
             TotalJobs = ets:info(?MODULE, size),
-            couch_stats:update_gauge([couch_replicator, jobs, total], TotalJobs),
+            couch_stats:update_gauge([couch_replicator, jobs, total],
+                TotalJobs),
             update_running_jobs_stats(),
             ok;
         {error, not_found} ->
@@ -695,7 +705,8 @@ last_started(#job{} = Job) ->
     end.
 
 
--spec update_history(#job{}, event_type(), erlang:timestamp(), #state{}) -> #job{}.
+-spec update_history(#job{}, event_type(), erlang:timestamp(), #state{}) ->
+    #job{}.
 update_history(Job, Type, When, State) ->
     History0 = [{Type, When} | Job#job.history],
     History1 = lists:sublist(History0, State#state.max_history),
@@ -749,7 +760,8 @@ stats_fold(#job{pid = P, history = [{started, T} | _]}, Acc) when is_pid(P) ->
 
 
 
--spec avg(Sum :: non_neg_integer(), N :: non_neg_integer())  -> non_neg_integer().
+-spec avg(Sum :: non_neg_integer(), N :: non_neg_integer()) ->
+    non_neg_integer().
 avg(_Sum, 0) ->
     0;
 
@@ -1174,8 +1186,8 @@ t_oneshot_dont_get_starting_priority() ->
 
 
 % This tested in other test cases, it is here to mainly make explicit a property
-% of one-shot replications -- they can starve other jobs if they "take control" of
-% all the available scheduler slots.
+% of one-shot replications -- they can starve other jobs if they "take control"
+% of all the available scheduler slots.
 t_oneshot_will_hog_the_scheduler() ->
     ?_test(begin
         Jobs = [
@@ -1215,7 +1227,8 @@ t_if_transient_job_crashes_it_gets_removed() ->
         setup_jobs([Job]),
         ?assertEqual(1, ets:info(?MODULE, size)),
         State = #state{max_history = 3},
-        {noreply, State} = handle_info({'DOWN', r1, process, Pid, failed}, State),
+        {noreply, State} = handle_info({'DOWN', r1, process, Pid, failed},
+            State),
         ?assertEqual(0, ets:info(?MODULE, size))
    end).
 
@@ -1232,7 +1245,8 @@ t_if_permanent_job_crashes_it_stays_in_ets() ->
         setup_jobs([Job]),
         ?assertEqual(1, ets:info(?MODULE, size)),
         State = #state{max_jobs =1, max_history = 3},
-        {noreply, State} = handle_info({'DOWN', r1, process, Pid, failed}, State),
+        {noreply, State} = handle_info({'DOWN', r1, process, Pid, failed},
+            State),
         ?assertEqual(1, ets:info(?MODULE, size)),
         [Job1] = ets:lookup(?MODULE, job1),
         [Latest | _] = Job1#job.history,

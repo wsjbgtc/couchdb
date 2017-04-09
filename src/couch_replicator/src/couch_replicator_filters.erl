@@ -105,12 +105,14 @@ view_type(Props, Options) ->
 % Private functions
 
 fetch_internal(DDocName, FilterName, Source, UserCtx) ->
-    Db = case (catch couch_replicator_api_wrap:db_open(Source, [{user_ctx, UserCtx}])) of
+    Db = case (catch couch_replicator_api_wrap:db_open(Source,
+        [{user_ctx, UserCtx}])) of
     {ok, Db0} ->
         Db0;
     DbError ->
         DbErrorMsg = io_lib:format("Could not open source database `~s`: ~s",
-           [couch_replicator_api_wrap:db_uri(Source), couch_util:to_binary(DbError)]),
+           [couch_replicator_api_wrap:db_uri(Source),
+               couch_util:to_binary(DbError)]),
         throw({fetch_error, iolist_to_binary(DbErrorMsg)})
     end,
     try
@@ -121,8 +123,10 @@ fetch_internal(DDocName, FilterName, Source, UserCtx) ->
         DocError ->
             DocErrorMsg = io_lib:format(
                 "Couldn't open document `_design/~s` from source "
-                "database `~s`: ~s", [DDocName, couch_replicator_api_wrap:db_uri(Source),
-                    couch_util:to_binary(DocError)]),
+                "database `~s`: ~s", [DDocName,
+                couch_replicator_api_wrap:db_uri(Source),
+                couch_util:to_binary(DocError)]
+            ),
             throw({fetch_error, iolist_to_binary(DocErrorMsg)})
         end,
         try
@@ -133,8 +137,10 @@ fetch_internal(DDocName, FilterName, Source, UserCtx) ->
              _Tag:CodeError ->
                  CodeErrorMsg = io_lib:format(
                      "Couldn't parse filter code from document ~s on `~s` "
-                     " Error: ~s", [DDocName, couch_replicator_api_wrap:db_uri(Source),
-                         couch_util:to_binary(CodeError)]),
+                     " Error: ~s", [DDocName,
+                     couch_replicator_api_wrap:db_uri(Source),
+                     couch_util:to_binary(CodeError)]
+                 ),
                  throw({fetch_error, CodeErrorMsg})
          end
     after
@@ -192,7 +198,7 @@ ejsort_basic_values_test() ->
     ?assertEqual(ejsort({[]}), {[]}).
 
 ejsort_compound_values_test() ->
-    ?assertEqual(ejsort([2, 1, 3 ,<<"a">>]), [2, 1, 3, <<"a">>]),
+    ?assertEqual(ejsort([2, 1, 3, <<"a">>]), [2, 1, 3, <<"a">>]),
     Ej1 = {[{<<"a">>, 0}, {<<"c">>, 0},  {<<"b">>, 0}]},
     Ej1s =  {[{<<"a">>, 0}, {<<"b">>, 0}, {<<"c">>, 0}]},
     ?assertEqual(ejsort(Ej1), Ej1s),
