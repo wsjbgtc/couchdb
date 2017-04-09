@@ -19,8 +19,8 @@
 -export([ensure_cluster_rep_ddoc_exists/1]).
 -export([
     remove_state_fields/2,
-    update_doc_completed/4,
-    update_failed/4,
+    update_doc_completed/3,
+    update_failed/3,
     update_rep_id/1
 ]).
 -export([update_triggered/2, update_error/2]).
@@ -59,30 +59,26 @@ remove_state_fields(DbName, DocId) ->
         {<<"_replication_state">>, undefined},
         {<<"_replication_state_time">>, undefined},
         {<<"_replication_state_reason">>, undefined},
-        {<<"_replication_start_time">>, undefined},
         {<<"_replication_id">>, undefined},
         {<<"_replication_stats">>, undefined}]).
 
--spec update_doc_completed(binary(), binary(), [_], erlang:timestamp()) -> any().
-update_doc_completed(DbName, DocId, Stats, StartTime) ->
-    StartTimeBin = couch_replicator_utils:iso8601(StartTime),
+-spec update_doc_completed(binary(), binary(), [_]) -> any().
+update_doc_completed(DbName, DocId, Stats) ->
     update_rep_doc(DbName, DocId, [
         {<<"_replication_state">>, <<"completed">>},
         {<<"_replication_state_reason">>, undefined},
-        {<<"_replication_start_time">>,  StartTimeBin},
         {<<"_replication_stats">>, {Stats}}]),
-    couch_stats:increment_counter([couch_replicator, docs, completed_state_updates]).
+    couch_stats:increment_counter([couch_replicator, docs,
+        completed_state_updates]).
 
 
--spec update_failed(binary(), binary(), any(), erlang:timestamp()) -> any().
-update_failed(DbName, DocId, Error, StartTime) ->
+-spec update_failed(binary(), binary(), any()) -> any().
+update_failed(DbName, DocId, Error) ->
     Reason = error_reason(Error),
     couch_log:error("Error processing replication doc `~s` from `~s`: ~s",
         [DocId, DbName, Reason]),
-    StartTimeBin = couch_replicator_utils:iso8601(StartTime),
     update_rep_doc(DbName, DocId, [
         {<<"_replication_state">>, <<"failed">>},
-        {<<"_replication_start_time">>, StartTimeBin},
         {<<"_replication_stats">>, undefined},
         {<<"_replication_state_reason">>, Reason}]),
     couch_stats:increment_counter([couch_replicator, docs, failed_state_updates]).
@@ -92,15 +88,12 @@ update_failed(DbName, DocId, Error, StartTime) ->
 update_triggered(Rep, {Base, Ext}) ->
     #rep{
         db_name = DbName,
-        doc_id = DocId,
-        start_time = StartTime
+        doc_id = DocId
     } = Rep,
-    StartTimeBin = couch_replicator_utils:iso8601(StartTime),
     update_rep_doc(DbName, DocId, [
         {<<"_replication_state">>, <<"triggered">>},
         {<<"_replication_state_reason">>, undefined},
         {<<"_replication_id">>, iolist_to_binary([Base, Ext])},
-        {<<"_replication_start_time">>, StartTimeBin},
         {<<"_replication_stats">>, undefined}]),
     ok.
 
@@ -199,14 +192,14 @@ replication_design_doc_props(DDocId) ->
                 {<<"map">>, ?REP_DB_TERMINAL_STATE_VIEW_MAP_FUN},
                 {<<"reduce">>, <<"_count">>}
             ]},
-    DocProps = [
+    [
         {<<"_id">>, DDocId},
         {<<"language">>, <<"javascript">>},
         {<<"validate_doc_update">>, ?REP_DB_DOC_VALIDATE_FUN},
         {<<"views">>, {[
             {<<"terminal_states">>, TerminalViewEJson}
         ]}}
-   ].
+    ].
 
 
 % Note: parse_rep_doc can handle filtered replications. During parsing of the

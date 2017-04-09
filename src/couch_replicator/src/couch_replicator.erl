@@ -266,7 +266,8 @@ job(JobId0) when is_binary(JobId0) ->
 
 -spec doc(binary(), binary(), [_]) -> {ok, {[_]}} | {error, not_found}.
 doc(RepDb, DocId, UserCtx) ->
-    {Res, _Bad} = rpc:multicall(couch_replicator_doc_processor, doc, [RepDb, DocId]),
+    {Res, _Bad} = rpc:multicall(couch_replicator_doc_processor, doc,
+        [RepDb, DocId]),
     case [DocInfo || {ok, DocInfo} <- Res] of
         [DocInfo| _] ->
             {ok, DocInfo};
@@ -283,17 +284,27 @@ doc_from_db(RepDb, DocId, UserCtx) ->
             Source = get_value(<<"source">>, Props),
             Target = get_value(<<"target">>, Props),
             State = get_value(<<"_replication_state">>, Props, null),
-            StartTime = get_value(<<"_replication_start_time">>, Props, null),
             StateTime = get_value(<<"_replication_state_time">>, Props, null),
-            {StateInfo, ErrorCount} = case State of
+            {StateInfo, ErrorCount, StartTime} = case State of
                 <<"completed">> ->
-                    Info = get_value(<<"_replication_stats">>, Props, null),
-                    {Info, 0};
+                    {InfoP} = get_value(<<"_replication_stats">>, Props, {[]}),
+                    case lists:keytake(<<"start_time">>, 1, InfoP) of
+                        {value, {_, Time}, InfoP1} ->
+                            {{InfoP1}, 0, Time};
+                        false ->
+                            case lists:keytake(start_time, 1, InfoP) of
+                                {value, {_, Time}, InfoP1} ->
+                                    {{InfoP1}, 0, Time};
+                            false ->
+                                    {{InfoP}, 0, null}
+                            end
+                    end;
                 <<"failed">> ->
-                    Info = get_value(<<"_replication_state_reason">>, Props, null),
-                    {Info, 1};
+                    Info = get_value(<<"_replication_state_reason">>, Props,
+                        null),
+                    {Info, 1, StateTime};
                 _OtherState ->
-                    {null, 0}
+                    {null, 0, null}
             end,
             {ok, {[
                 {doc_id, DocId},

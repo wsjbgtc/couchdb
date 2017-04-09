@@ -493,8 +493,9 @@ doc_update_triggered(#rep{id = RepId, doc_id = DocId} = Rep) ->
 doc_update_completed(#rep{db_name = null}, _Stats) ->
     ok;
 doc_update_completed(#rep{id = RepId, doc_id = DocId, db_name = DbName,
-    start_time = StartTime}, Stats) ->
-    couch_replicator_docs:update_doc_completed(DbName, DocId, Stats, StartTime),
+    start_time = StartTime}, Stats0) ->
+    Stats = Stats0 ++ [{start_time, couch_replicator_utils:iso8601(StartTime)}],
+    couch_replicator_docs:update_doc_completed(DbName, DocId, Stats),
     couch_log:notice("Replication `~s` completed (triggered by `~s`)",
         [pp_rep_id(RepId), DocId]),
     ok.

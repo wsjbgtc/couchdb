@@ -84,8 +84,7 @@ db_change(DbName, {ChangeProps} = Change, Server) ->
     _Tag:Error ->
         {RepProps} = get_json_value(doc, ChangeProps),
         DocId = get_json_value(<<"_id">>, RepProps),
-        Timestamp = os:timestamp(),
-        couch_replicator_docs:update_failed(DbName, DocId, Error, Timestamp)
+        couch_replicator_docs:update_failed(DbName, DocId, Error)
     end,
     Server.
 
@@ -830,7 +829,7 @@ setup() ->
     meck:expect(couch_replicator_doc_processor_worker, spawn_worker, 4, pid),
     meck:expect(couch_replicator_scheduler, remove_job, 1, ok),
     meck:expect(couch_replicator_docs, remove_state_fields, 2, ok),
-    meck:expect(couch_replicator_docs, update_failed, 4, ok),
+    meck:expect(couch_replicator_docs, update_failed, 3, ok),
     {ok, Pid} = start_link(),
     Pid.
 

@@ -178,17 +178,25 @@
         if (state === 'failed') {
             source = doc.source;
             target = doc.target;
-            start_time = doc._replication_start_time;
             last_updated = doc._replication_state_time;
             state_reason = doc._replication_state_reason;
-            emit('failed', [source, target, start_time, last_updated, state_reason]);
+            emit('failed', [source, target, last_updated, last_updated, state_reason]);
         } else if (state === 'completed') {
             source = doc.source;
             target = doc.target;
-            start_time = doc._replication_start_time;
             last_updated = doc._replication_state_time;
             stats = doc._replication_stats;
-            emit('completed', [source, target, start_time, last_updated, stats]);
+            start_time = stats.start_time;
+            info = {
+                'changes_pending': stats['changes_pending'],
+                'checkpointed_source_seq': stats['checkpointed_source_seq'],
+                'doc_write_failures': stats['doc_write_failures'],
+                'docs_read': stats['docs_read'],
+                'docs_written': stats['docs_written'],
+                'missing_revisions_found': stats['missing_revisions_found'],
+                'revisions_checked': stats['revisions_checked']
+            }
+            emit('completed', [source, target, start_time, last_updated, info]);
         }
     }
 ">>).
