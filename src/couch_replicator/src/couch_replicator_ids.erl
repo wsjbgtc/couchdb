@@ -18,11 +18,6 @@
 -include("couch_replicator_api_wrap.hrl").
 -include("couch_replicator.hrl").
 
--import(couch_util, [
-    get_value/2,
-    get_value/3
-]).
-
 % replication_id/1 and replication_id/2 will attempt to fetch
 % filter code for filtered replications. If fetching or parsing
 % of the remotely fetched filter code fails they throw:
@@ -108,7 +103,7 @@ maybe_append_filters(Base,
 maybe_append_options(Options, RepOptions) ->
     lists:foldl(fun(Option, Acc) ->
         Acc ++
-        case get_value(Option, RepOptions, false) of
+        case couch_util:get_value(Option, RepOptions, false) of
         true ->
             "+" ++ atom_to_list(Option);
         false ->
