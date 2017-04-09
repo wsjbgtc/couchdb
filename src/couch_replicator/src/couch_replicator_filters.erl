@@ -17,11 +17,6 @@
 
 -include_lib("couch/include/couch_db.hrl").
 
--import(couch_util, [
-    get_value/2,
-    get_value/3
-]).
-
 
 % Parse the filter from replication options proplist.
 % Return {ok, {FilterType,...}} | {error, ParseError}.
@@ -29,16 +24,16 @@
 % in source database, this code doesn't fetch the filter
 % code, but only returns the name of the filter.
 -spec parse([_]) ->
-  {ok, nil} |
-  {ok, {view, binary(), {[_]}}} |
-  {ok, {user, {binary(), binary()}, {[_]}}} |
-  {ok, {docids, [_]}} |
-  {ok, {mango, {[_]}}} |
-  {error, binary()}.
+    {ok, nil} |
+    {ok, {view, binary(), {[_]}}} |
+    {ok, {user, {binary(), binary()}, {[_]}}} |
+    {ok, {docids, [_]}} |
+    {ok, {mango, {[_]}}} |
+    {error, binary()}.
 parse(Options) ->
-    Filter = get_value(filter, Options),
-    DocIds = get_value(doc_ids, Options),
-    Selector = get_value(selector, Options),
+    Filter = couch_util:get_value(filter, Options),
+    DocIds = couch_util:get_value(doc_ids, Options),
+    Selector = couch_util:get_value(selector, Options),
     case {Filter, DocIds, Selector} of
         {undefined, undefined, undefined} ->
             {ok, nil};
@@ -92,10 +87,10 @@ fetch(DDocName, FilterName, Source, UserCtx) ->
 -spec view_type([_], [_]) ->
     {view, {binary(), binary()}} | {db, nil} | {error, binary()}.
 view_type(Props, Options) ->
-    case get_value(<<"filter">>, Props) of
+    case couch_util:get_value(<<"filter">>, Props) of
         <<"_view">> ->
-            {QP}  = get_value(query_params, Options, {[]}),
-            ViewParam = get_value(<<"view">>, QP),
+            {QP}  = couch_util:get_value(query_params, Options, {[]}),
+            ViewParam = couch_util:get_value(<<"view">>, QP),
             case re:split(ViewParam, <<"/">>) of
                 [DName, ViewName] ->
                     {view, {<< "_design/", DName/binary >>, ViewName}};
@@ -150,7 +145,7 @@ fetch_internal(DDocName, FilterName, Source, UserCtx) ->
 
 -spec query_params([_]) -> {[_]}.
 query_params(Options)->
-    get_value(query_params, Options, {[]}).
+    couch_util:get_value(query_params, Options, {[]}).
 
 
 
