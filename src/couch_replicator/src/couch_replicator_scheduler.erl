@@ -651,17 +651,13 @@ reschedule(State) ->
 stop_excess_jobs(State, Running) ->
     #state{max_jobs=MaxJobs} = State,
     StopCount = Running - MaxJobs,
-    if StopCount > 0 ->
+    if StopCount =< 0 -> ok; true ->
         Stopped = stop_jobs(StopCount, true, State),
         OneshotLeft = StopCount - Stopped,
-        if OneshotLeft > 0 ->
+        if OneshotLeft =< 0 -> ok; true ->
             stop_jobs(OneshotLeft, false, State),
-            ok;
-        true ->
             ok
-        end;
-    true ->
-        ok
+        end
     end.
 
 
