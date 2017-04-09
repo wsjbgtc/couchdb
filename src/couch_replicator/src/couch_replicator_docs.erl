@@ -213,12 +213,12 @@ parse_rep_doc(RepDoc) ->
     {ok, Rep} = try
         parse_rep_doc(RepDoc, rep_user_ctx(RepDoc))
     catch
-    throw:{error, Reason} ->
-        throw({bad_rep_doc, Reason});
-    throw:{filter_fetch_error, Reason} ->
-        throw({filter_fetch_error, Reason});
-    Tag:Err ->
-        throw({bad_rep_doc, to_binary({Tag, Err})})
+        throw:{error, Reason} ->
+            throw({bad_rep_doc, Reason});
+        throw:{filter_fetch_error, Reason} ->
+            throw({filter_fetch_error, Reason});
+        Tag:Err ->
+            throw({bad_rep_doc, to_binary({Tag, Err})})
     end,
     Rep.
 
@@ -228,10 +228,10 @@ parse_rep_doc_without_id(RepDoc) ->
     {ok, Rep} = try
         parse_rep_doc_without_id(RepDoc, rep_user_ctx(RepDoc))
     catch
-    throw:{error, Reason} ->
-        throw({bad_rep_doc, Reason});
-    Tag:Err ->
-        throw({bad_rep_doc, to_binary({Tag, Err})})
+        throw:{error, Reason} ->
+            throw({bad_rep_doc, Reason});
+        Tag:Err ->
+            throw({bad_rep_doc, to_binary({Tag, Err})})
     end,
     Rep.
 
