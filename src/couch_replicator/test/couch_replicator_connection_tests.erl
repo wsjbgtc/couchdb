@@ -37,7 +37,7 @@ httpc_pool_test_() ->
                 foreach,
                 fun setup/0, fun teardown/1,
                 [
-                    fun connections_shared_after_relinquish/1,
+                    fun connections_shared_after_release/1,
                     fun connections_not_shared_after_owner_death/1,
                     fun idle_connections_closed/1,
                     fun test_owner_monitors/1
@@ -47,12 +47,12 @@ httpc_pool_test_() ->
     }.
 
 
-connections_shared_after_relinquish({Host, Port}) ->
+connections_shared_after_release({Host, Port}) ->
     ?_test(begin
         URL = "http://" ++ Host ++ ":" ++ Port,
         Self = self(),
         {ok, Pid} = couch_replicator_connection:acquire(URL),
-        couch_replicator_connection:relinquish(Pid),
+        couch_replicator_connection:release(Pid),
         spawn(fun() ->
             Self ! couch_replicator_connection:acquire(URL)
         end),
@@ -92,7 +92,7 @@ idle_connections_closed({Host, Port}) ->
         ?assert(ets:member(couch_replicator_connection, Pid)),
         % block until idle connections have closed
         sys:get_status(couch_replicator_connection),
-        couch_replicator_connection:relinquish(Pid),
+        couch_replicator_connection:release(Pid),
         couch_replicator_connection ! close_idle_connections,
         % block until idle connections have closed
         sys:get_status(couch_replicator_connection),
@@ -105,7 +105,7 @@ test_owner_monitors({Host, Port}) ->
         URL = "http://" ++ Host ++ ":" ++ Port,
         {ok, Worker0} = couch_replicator_connection:acquire(URL),
         assert_monitors_equal([{process, self()}]),
-        couch_replicator_connection:relinquish(Worker0),
+        couch_replicator_connection:release(Worker0),
         assert_monitors_equal([]),
         {Workers, Monitors}  = lists:foldl(fun(_, {WAcc, MAcc}) ->
             {ok, Worker1} = couch_replicator_connection:acquire(URL),
@@ -115,7 +115,7 @@ test_owner_monitors({Host, Port}) ->
         end, {[], []}, lists:seq(1,5)),
         lists:foldl(fun(Worker2, Acc) ->
             [_ | NewAcc] = Acc,
-            couch_replicator_connection:relinquish(Worker2),
+            couch_replicator_connection:release(Worker2),
             assert_monitors_equal(NewAcc),
             NewAcc
         end, Monitors, Workers)

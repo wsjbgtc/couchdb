@@ -19,7 +19,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2]).
 -export([code_change/3, terminate/2]).
 
--export([acquire/1, relinquish/1]).
+-export([acquire/1, release/1]).
 
 -export([handle_config_change/5, handle_config_terminate/3]).
 
@@ -73,9 +73,9 @@ acquire(URL0) ->
     end.
 
 
-relinquish(Worker) ->
+release(Worker) ->
     unlink(Worker),
-    gen_server:cast(?MODULE, {relinquish, Worker}).
+    gen_server:cast(?MODULE, {release, Worker}).
 
 
 handle_call({acquire, URL}, From, State) ->
@@ -108,8 +108,8 @@ handle_call({create, URL, Worker}, From, State) ->
     end.
 
 
-handle_cast({relinquish, WorkerPid}, State) ->
-    couch_stats:increment_counter([couch_replicator, connection, relinquishes]),
+handle_cast({release, WorkerPid}, State) ->
+    couch_stats:increment_counter([couch_replicator, connection, releasees]),
     case ets:lookup(?MODULE, WorkerPid) of
         [Worker] ->
             case Worker#connection.mref of

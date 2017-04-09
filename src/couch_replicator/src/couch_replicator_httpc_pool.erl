@@ -158,7 +158,7 @@ release_worker_internal(Worker, State) ->
         Workers = case queue:out(Waiting) of
         {empty, Waiting2} ->
             NewCallers1 = NewCallers0,
-            couch_replicator_connection:relinquish(Worker),
+            couch_replicator_connection:release(Worker),
             State#state.workers -- [Worker];
         {{value, From}, Waiting2} ->
             NewCallers1 = monitor_client(NewCallers0, Worker, From),
