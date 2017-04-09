@@ -227,13 +227,13 @@ start_changes_reader(DbName, Since) ->
 
 changes_reader(Server, DbName, Since) ->
     {ok, Db} = couch_db:open_int(DbName, [?CTX, sys_db]),
-    ChFun = couch_changes:handle_db_changes(
-        #changes_args{
-            include_docs = true,
-            since = Since,
-            feed = "normal",
-            timeout = infinity
-        }, {json_req, null}, Db),
+    ChangesArgs = #changes_args{
+        include_docs = true,
+        since = Since,
+        feed = "normal",
+        timeout = infinity
+    },
+    ChFun = couch_changes:handle_db_changes(ChangesArgs, {json_req, null}, Db),
     ChFun({fun ?MODULE:changes_reader_cb/3, {Server, DbName}}).
 
 
