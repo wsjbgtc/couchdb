@@ -169,15 +169,19 @@ new_timer(IntervalSec) ->
     Timer.
 
 
+% For the first Period seconds after node boot we check cluster stability every
+% StartPeriod seconds. Once the initial Period seconds have passed we continue
+% to monitor once every Period seconds
 -spec interval(#state{}) -> non_neg_integer().
-interval(#state{period = Period, start_period = Period0, start_time = T0}) ->
+interval(#state{period = Period, start_period = StartPeriod,
+        start_time = T0}) ->
     case now_diff_sec(T0) > Period of
         true ->
             % Normal operation
             Period;
         false ->
             % During startup
-            Period0
+            StartPeriod
     end.
 
 
