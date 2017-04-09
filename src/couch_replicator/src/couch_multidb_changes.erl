@@ -256,15 +256,18 @@ scan_all_dbs(Server, DbSuffix) when is_pid(Server) ->
     ChangesFun = couch_changes:handle_changes(#changes_args{}, nil, Db, nil),
     ChangesFun(fun({change, {Change}, _}, _) ->
         DbName = couch_util:get_value(<<"id">>, Change),
-        case DbName of <<"_design/", _/binary>> -> ok; _Else ->
-            case couch_replicator_utils:is_deleted(Change) of
-            true ->
+        case DbName of
+            <<"_design/", _/binary>> ->
                 ok;
-            false ->
-                [gen_server:cast(Server, {resume_scan, ShardName})
-                    || ShardName <- filter_shards(DbName, DbSuffix)],
-                ok
-            end
+            _Else ->
+                case couch_replicator_utils:is_deleted(Change) of
+                    true ->
+                        ok;
+                    false ->
+                        [gen_server:cast(Server, {resume_scan, ShardName})
+                         || ShardName <- filter_shards(DbName, DbSuffix)],
+                        ok
+                end
         end;
         (_, _) -> ok
     end),
