@@ -79,7 +79,8 @@ add_job(#rep{} = Rep) when Rep#rep.id /= undefined ->
     Job = #job{
         id = Rep#rep.id,
         rep = Rep,
-        history = [{added, os:timestamp()}]},
+        history = [{added, os:timestamp()}]
+    },
     gen_server:call(?MODULE, {add_job, Job}, infinity).
 
 
