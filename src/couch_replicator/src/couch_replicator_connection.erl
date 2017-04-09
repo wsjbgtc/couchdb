@@ -13,18 +13,40 @@
 -module(couch_replicator_connection).
 
 -behavior(gen_server).
+
 -behavior(config_listener).
 
--export([start_link/0]).
--export([init/1, handle_call/3, handle_cast/2, handle_info/2]).
--export([code_change/3, terminate/2]).
 
--export([acquire/1, release/1]).
+-export([
+    start_link/0
+]).
 
--export([handle_config_change/5, handle_config_terminate/3]).
+-export([
+   init/1,
+   terminate/2,
+   handle_call/3,
+   handle_info/2,
+   handle_cast/2,
+   code_change/3
+]).
+
+-export([
+   acquire/1,
+   release/1
+]).
+
+-export([
+    handle_config_change/5,
+    handle_config_terminate/3
+]).
+
+
+-include_lib("ibrowse/include/ibrowse.hrl").
+
 
 -define(DEFAULT_CLOSE_INTERVAL, 90000).
 -define(RELISTEN_DELAY, 5000).
+
 
 -record(state, {
     close_interval,
@@ -37,8 +59,6 @@
     port,
     mref
 }).
-
--include_lib("ibrowse/include/ibrowse.hrl").
 
 
 start_link() ->

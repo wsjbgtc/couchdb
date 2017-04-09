@@ -11,14 +11,27 @@
 % the License.
 
 -module(couch_multidb_changes).
+
 -behaviour(gen_server).
 
--export([start_link/4]).
 
--export([init/1, handle_call/3, handle_info/2, handle_cast/2]).
--export([code_change/3, terminate/2]).
+-export([
+   start_link/4
+]).
 
--export([changes_reader/3, changes_reader_cb/3]).
+-export([
+   init/1,
+   terminate/2,
+   handle_call/3,
+   handle_info/2,
+   handle_cast/2,
+   code_change/3
+]).
+
+-export([
+   changes_reader/3,
+   changes_reader_cb/3
+]).
 
 -include_lib("couch/include/couch_db.hrl").
 -include_lib("mem3/include/mem3.hrl").
@@ -39,8 +52,6 @@
     skip_ddocs :: boolean()
 }).
 
-
-
 % Behavior API
 
 % For each db shard with a matching suffix, report created,
@@ -57,7 +68,6 @@
 
 -callback db_change(DbName :: binary(), Change :: term(), Context :: term()) ->
     Context :: term().
-
 
 
 % External API
@@ -220,7 +230,6 @@ resume_scan(DbName, #state{pids=Pids, tid=Ets} = State) ->
      end.
 
 
-
 start_changes_reader(DbName, Since) ->
     spawn_link(?MODULE, changes_reader, [self(), DbName, Since]).
 
@@ -312,7 +321,6 @@ is_design_doc_id(<<?DESIGN_DOC_PREFIX, _/binary>>) ->
 
 is_design_doc_id(_) ->
     false.
-
 
 
 -ifdef(TEST).

@@ -12,17 +12,25 @@
 
 -module(couch_replicator_utils).
 
--export([parse_rep_doc/2]).
--export([open_db/1, close_db/1]).
--export([start_db_compaction_notifier/2, stop_db_compaction_notifier/1]).
--export([replication_id/2]).
--export([sum_stats/2, is_deleted/1]).
--export([rep_error_to_binary/1]).
--export([get_json_value/2, get_json_value/3]).
--export([pp_rep_id/1]).
--export([iso8601/1]).
+-export([
+   parse_rep_doc/2,
+   open_db/1,
+   close_db/1,
+   start_db_compaction_notifier/2,
+   stop_db_compaction_notifier/1,
+   replication_id/2,
+   sum_stats/2,
+   is_deleted/1,
+   rep_error_to_binary/1,
+   get_json_value/2,
+   get_json_value/3,
+   pp_rep_id/1,
+   iso8601/1
+]).
 
--export([handle_db_event/3]).
+-export([
+    handle_db_event/3
+]).
 
 -include_lib("couch/include/couch_db.hrl").
 -include("couch_replicator.hrl").
@@ -31,7 +39,6 @@
     get_value/2,
     get_value/3
 ]).
-
 
 
 open_db(#db{name = Name, user_ctx = UserCtx}) ->
@@ -69,7 +76,6 @@ handle_db_event(_DbName, _Event, Server) ->
     {ok, Server}.
 
 
-
 rep_error_to_binary(Error) ->
     couch_util:to_binary(error_reason(Error)).
 
@@ -83,7 +89,6 @@ error_reason({error, Reason}) ->
     Reason;
 error_reason(Reason) ->
     Reason.
-
 
 
 get_json_value(Key, Props) ->
@@ -126,13 +131,16 @@ is_deleted(Change) ->
         Else
     end.
 
+
 % NV: TODO: proxy some functions which used to be here, later remove
 % these and replace calls to their respective modules
 replication_id(Rep, Version) ->
     couch_replicator_ids:replication_id(Rep, Version).
 
+
 sum_stats(S1, S2) ->
     couch_replicator_stats:sum_stats(S1, S2).
+
 
 parse_rep_doc(Props, UserCtx) ->
     couch_replicator_docs:parse_rep_doc(Props, UserCtx).

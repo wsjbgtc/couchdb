@@ -12,10 +12,15 @@
 
 -module(couch_replicator).
 
--export([replicate/2, ensure_rep_db_exists/0]).
--export([stream_active_docs_info/3, stream_terminal_docs_info/4]).
--export([replication_states/0]).
--export([job/1, doc/3]).
+-export([
+    replicate/2,
+    ensure_rep_db_exists/0,
+    stream_active_docs_info/3,
+    stream_terminal_docs_info/4,
+    replication_states/0,
+    job/1,
+    doc/3
+]).
 
 -include_lib("couch/include/couch_db.hrl").
 -include("couch_replicator.hrl").

@@ -12,8 +12,12 @@
 
 -module(couch_replicator_filters).
 
--export([parse/1, fetch/4, view_type/2]).
--export([ejsort/1]).
+-export([
+    parse/1,
+    fetch/4,
+    view_type/2,
+    ejsort/1
+]).
 
 -include_lib("couch/include/couch_db.hrl").
 
@@ -154,7 +158,6 @@ query_params(Options)->
     couch_util:get_value(query_params, Options, {[]}).
 
 
-
 parse_user_filter(Filter) ->
     case re:run(Filter, "(.*?)/(.*)", [{capture, [1, 2], binary}]) of
         {match, [DDocName0, FilterName0]} ->
@@ -175,10 +178,12 @@ ejsort(V) when is_list(V) ->
 ejsort(V) ->
     V.
 
+
 ejsort_props([], Acc)->
     {lists:keysort(1, Acc)};
 ejsort_props([{K, V}| R], Acc) ->
     ejsort_props(R, [{K, ejsort(V)} | Acc]).
+
 
 ejsort_array([], Acc)->
     lists:reverse(Acc);

@@ -25,9 +25,12 @@
 
 -module(couch_replicator_rate_limiter_tables).
 
--export([create/1]).
--export([table_names/0]).
--export([term_to_table/1]).
+-export([
+   create/1,
+   table_names/0,
+   term_to_table/1
+]).
+
 
 -define(SHARDS_N, 16).
 
@@ -37,6 +40,7 @@ create(KeyPos) ->
     Opts = [named_table, public, {keypos, KeyPos}, {read_concurrency, true}],
     [ets:new(list_to_atom(TableName), Opts) || TableName <- table_names()],
     ok.
+
 
 -spec table_names() -> [string()].
 table_names() ->

@@ -11,20 +11,39 @@
 % the License.
 
 -module(couch_replicator_doc_processor).
+
+-behaviour(gen_server).
+
 -behaviour(couch_multidb_changes).
 
--export([start_link/0]).
--export([docs/1, doc/2]).
--export([update_docs/0]).
--export([get_worker_ref/1]).
--export([notify_cluster_event/2]).
+-export([
+    start_link/0
+]).
 
-% multidb changes callback
--export([db_created/2, db_deleted/2, db_found/2, db_change/3]).
+-export([
+   init/1,
+   terminate/2,
+   handle_call/3,
+   handle_info/2,
+   handle_cast/2,
+   code_change/3
+]).
 
-% gen_server callbacks
--export([init/1, handle_call/3, handle_info/2, handle_cast/2,
-         code_change/3, terminate/2]).
+-export([
+    db_created/2,
+    db_deleted/2,
+    db_found/2,
+    db_change/3
+]).
+
+-export([
+    docs/1,
+    doc/2,
+    update_docs/0,
+    get_worker_ref/1,
+    notify_cluster_event/2
+]).
+
 
 -include_lib("couch/include/couch_db.hrl").
 -include("couch_replicator.hrl").
@@ -53,7 +72,6 @@
     worker :: reference() | nil | '_',
     last_updated :: erlang:timestamp() | '_'
 }).
-
 
 
 % couch_multidb_changes API callbacks
@@ -927,8 +945,6 @@ bad_change() ->
             {<<"source">>, <<"src">>}
         ]}}
     ]}.
-
-
 
 
 -endif.

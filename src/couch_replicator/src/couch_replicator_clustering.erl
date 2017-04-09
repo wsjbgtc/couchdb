@@ -25,19 +25,36 @@
 
 
 -module(couch_replicator_clustering).
+
 -behaviour(gen_server).
+
 -behaviour(config_listener).
 
-% public API
--export([start_link/0, owner/2, is_stable/0]).
--export([link_cluster_event_listener/3]).
 
-% gen_server callbacks
--export([init/1, handle_call/3, handle_info/2, handle_cast/2,
-         code_change/3, terminate/2]).
+-export([
+   start_link/0
+]).
+
+-export([
+   init/1,
+   terminate/2,
+   handle_call/3,
+   handle_info/2,
+   handle_cast/2,
+   code_change/3
+]).
+
+-export([
+   owner/2,
+   is_stable/0,
+   link_cluster_event_listener/3
+]).
 
 % config_listener callbacks
--export([handle_config_change/5, handle_config_terminate/3]).
+-export([
+   handle_config_change/5,
+   handle_config_terminate/3
+]).
 
 -include_lib("couch/include/couch_db.hrl").
 -include_lib("mem3/include/mem3.hrl").
@@ -208,6 +225,7 @@ handle_config_change(_, _, _, _, S) ->
 
 
 handle_config_terminate(_, stop, _) -> ok;
+
 handle_config_terminate(_S, _R, _St) ->
     Pid = whereis(?MODULE),
     erlang:send_after(?RELISTEN_DELAY, Pid, restart_config_listener).

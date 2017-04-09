@@ -12,29 +12,31 @@
 
 -module(couch_replicator_docs).
 
--export([parse_rep_doc/1, parse_rep_doc/2, parse_rep_db/3]).
--export([parse_rep_doc_without_id/1, parse_rep_doc_without_id/2]).
--export([before_doc_update/2, after_doc_read/2]).
--export([ensure_rep_db_exists/0, ensure_rep_ddoc_exists/1]).
--export([ensure_cluster_rep_ddoc_exists/1]).
 -export([
+    parse_rep_doc/1,
+    parse_rep_doc/2,
+    parse_rep_db/3,
+    parse_rep_doc_without_id/1,
+    parse_rep_doc_without_id/2,
+    before_doc_update/2,
+    after_doc_read/2,
+    ensure_rep_db_exists/0,
+    ensure_rep_ddoc_exists/1,
+    ensure_cluster_rep_ddoc_exists/1,
     remove_state_fields/2,
     update_doc_completed/3,
     update_failed/3,
-    update_rep_id/1
+    update_rep_id/1,
+    update_triggered/2,
+    update_error/2
 ]).
--export([update_triggered/2, update_error/2]).
 
-
--define(REP_DB_NAME, <<"_replicator">>).
--define(REP_DESIGN_DOC, <<"_design/_replicator">>).
 
 -include_lib("couch/include/couch_db.hrl").
 -include_lib("ibrowse/include/ibrowse.hrl").
 -include_lib("mem3/include/mem3.hrl").
 -include("couch_replicator_api_wrap.hrl").
 -include("couch_replicator.hrl").
-
 -include("couch_replicator_js_functions.hrl").
 
 -import(couch_util, [
@@ -49,10 +51,12 @@
 ]).
 
 
+-define(REP_DB_NAME, <<"_replicator">>).
+-define(REP_DESIGN_DOC, <<"_design/_replicator">>).
 -define(OWNER, <<"owner">>).
 -define(CTX, {user_ctx, #user_ctx{roles=[<<"_admin">>, <<"_replicator">>]}}).
-
 -define(replace(L, K, V), lists:keystore(K, 1, L, {K, V})).
+
 
 remove_state_fields(DbName, DocId) ->
     update_rep_doc(DbName, DocId, [
@@ -61,6 +65,7 @@ remove_state_fields(DbName, DocId) ->
         {<<"_replication_state_reason">>, undefined},
         {<<"_replication_id">>, undefined},
         {<<"_replication_stats">>, undefined}]).
+
 
 -spec update_doc_completed(binary(), binary(), [_]) -> any().
 update_doc_completed(DbName, DocId, Stats) ->
@@ -305,6 +310,7 @@ update_rep_id(Rep) ->
 update_rep_doc(RepDbName, RepDocId, KVs) ->
     update_rep_doc(RepDbName, RepDocId, KVs, 1).
 
+
 update_rep_doc(RepDbName, RepDocId, KVs, Wait) when is_binary(RepDocId) ->
     try
         case open_rep_doc(RepDbName, RepDocId) of
@@ -320,6 +326,7 @@ update_rep_doc(RepDbName, RepDocId, KVs, Wait) when is_binary(RepDocId) ->
             ok = timer:sleep(random:uniform(erlang:min(128, Wait)) * 100),
             update_rep_doc(RepDbName, RepDocId, KVs, Wait * 2)
     end;
+
 update_rep_doc(RepDbName, #doc{body = {RepDocBody}} = RepDoc, KVs, _Try) ->
     NewRepDocBody = lists:foldl(
         fun({K, undefined}, Body) ->
@@ -348,6 +355,7 @@ update_rep_doc(RepDbName, #doc{body = {RepDocBody}} = RepDoc, KVs, _Try) ->
         save_rep_doc(RepDbName, RepDoc#doc{body = {NewRepDocBody}})
     end.
 
+
 open_rep_doc(DbName, DocId) ->
     case couch_db:open_int(DbName, [?CTX, sys_db]) of
         {ok, Db} ->
@@ -359,6 +367,7 @@ open_rep_doc(DbName, DocId) ->
         Else ->
             Else
     end.
+
 
 save_rep_doc(DbName, Doc) ->
     {ok, Db} = couch_db:open_int(DbName, [?CTX, sys_db]),
@@ -380,6 +389,7 @@ rep_user_ctx({RepDoc}) ->
             roles = get_json_value(<<"roles">>, UserCtx, [])
         }
     end.
+
 
 -spec parse_rep_db({[_]} | binary(), binary(), [_]) -> #httpd{} | binary().
 parse_rep_db({Props}, Proxy, Options) ->
@@ -424,12 +434,16 @@ parse_rep_db({Props}, Proxy, Options) ->
         retries = get_value(retries, Options),
         proxy_url = ProxyURL
     };
+
 parse_rep_db(<<"http://", _/binary>> = Url, Proxy, Options) ->
     parse_rep_db({[{<<"url">>, Url}]}, Proxy, Options);
+
 parse_rep_db(<<"https://", _/binary>> = Url, Proxy, Options) ->
     parse_rep_db({[{<<"url">>, Url}]}, Proxy, Options);
+
 parse_rep_db(<<DbName/binary>>, _Proxy, _Options) ->
     DbName;
+
 parse_rep_db(undefined, _Proxy, _Options) ->
     throw({error, <<"Missing replicator database">>}).
 
@@ -437,6 +451,7 @@ parse_rep_db(undefined, _Proxy, _Options) ->
 -spec maybe_add_trailing_slash(binary() | list()) -> list().
 maybe_add_trailing_slash(Url) when is_binary(Url) ->
     maybe_add_trailing_slash(?b2l(Url));
+
 maybe_add_trailing_slash(Url) ->
     case lists:last(Url) of
     $/ ->
@@ -444,6 +459,7 @@ maybe_add_trailing_slash(Url) ->
     _ ->
         Url ++ "/"
     end.
+
 
 -spec make_options([_]) -> [_].
 make_options(Props) ->
@@ -529,6 +545,7 @@ convert_options([{<<"checkpoint_interval">>, V} | R]) ->
 convert_options([_ | R]) -> % skip unknown option
     convert_options(R).
 
+
 -spec check_options([_]) -> [_].
 check_options(Options) ->
     DocIds = lists:keyfind(doc_ids, 1, Options),
@@ -568,6 +585,7 @@ parse_proxy_params(ProxyUrl) ->
             [{proxy_user, User}, {proxy_password, Passwd}]
         end.
 
+
 -spec ssl_params([_]) -> [_].
 ssl_params(Url) ->
     case ibrowse_lib:parse_url(Url) of
@@ -595,6 +613,7 @@ ssl_params(Url) ->
     #url{protocol = http} ->
         []
     end.
+
 
 -spec ssl_verify_options(true | false) -> [_].
 ssl_verify_options(true) ->
@@ -684,7 +703,6 @@ error_reason({error, Reason}) ->
     to_binary(Reason);
 error_reason(Reason) ->
     to_binary(Reason).
-
 
 
 -ifdef(TEST).

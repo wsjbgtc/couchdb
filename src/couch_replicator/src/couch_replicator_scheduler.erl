@@ -11,28 +11,51 @@
 % the License.
 
 -module(couch_replicator_scheduler).
+
 -behaviour(gen_server).
+
 -behaviour(config_listener).
--vsn(1).
+
+
+-export([
+    start_link/0
+]).
+
+-export([
+   init/1,
+   terminate/2,
+   handle_call/3,
+   handle_info/2,
+   handle_cast/2,
+   code_change/3,
+   format_status/2
+]).
+
+-export([
+   add_job/1,
+   remove_job/1,
+   reschedule/0,
+   rep_state/1,
+   find_jobs_by_dbname/1,
+   find_jobs_by_doc/2,
+   job_summary/2,
+   health_threshold/0,
+   jobs/0,
+   job/1
+]).
+
+%% config_listener callbacks
+-export([
+    handle_config_change/5,
+    handle_config_terminate/3
+]).
+
 
 -include("couch_replicator_scheduler.hrl").
 -include("couch_replicator.hrl").
 -include("couch_replicator_api_wrap.hrl").
 -include_lib("couch/include/couch_db.hrl").
 
-%% public api
--export([start_link/0, add_job/1, remove_job/1, reschedule/0]).
--export([rep_state/1, find_jobs_by_dbname/1, find_jobs_by_doc/2]).
--export([job_summary/2, health_threshold/0]).
--export([jobs/0, job/1]).
-
-%% gen_server callbacks
--export([init/1, terminate/2, code_change/3]).
--export([handle_call/3, handle_cast/2, handle_info/2]).
--export([format_status/2]).
-
-%% config_listener callback
--export([handle_config_change/5, handle_config_terminate/3]).
 
 %% types
 -type event_type() :: added | started | stopped | {crashed, any()}.
@@ -49,6 +72,8 @@
 -define(DEFAULT_MAX_CHURN, 20).
 -define(DEFAULT_MAX_HISTORY, 20).
 -define(DEFAULT_SCHEDULER_INTERVAL, 60000).
+
+
 -record(state, {interval, timer, max_jobs, max_churn, max_history}).
 -record(job, {
           id :: job_id() | '$1' | '_',
@@ -585,9 +610,6 @@ running_jobs() ->
 -spec pending_job_count() -> non_neg_integer().
 pending_job_count() ->
     ets:select_count(?MODULE, [{#job{pid=undefined, _='_'}, [], [true]}]).
-
-
-
 
 
 -spec job_by_pid(pid()) -> {ok, #job{}} | {error, not_found}.

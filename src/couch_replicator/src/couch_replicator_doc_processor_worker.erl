@@ -12,7 +12,9 @@
 
 -module(couch_replicator_doc_processor_worker).
 
--export([spawn_worker/4]).
+-export([
+    spawn_worker/4
+]).
 
 -include("couch_replicator.hrl").
 
@@ -21,6 +23,7 @@
 ]).
 
 -define(WORKER_TIMEOUT_MSEC, 61000).
+
 
 % Spawn a worker which attempts to calculate replication id then add a
 % replication job to scheduler. This function create a monitor to the worker

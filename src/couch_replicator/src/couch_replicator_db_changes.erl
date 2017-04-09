@@ -11,14 +11,25 @@
 % the License.
 
 -module(couch_replicator_db_changes).
+
 -behaviour(gen_server).
 
--export([start_link/0]).
+-export([
+   start_link/0
+]).
 
--export([init/1, handle_call/3, handle_info/2, handle_cast/2]).
--export([code_change/3, terminate/2]).
+-export([
+   init/1,
+   terminate/2,
+   handle_call/3,
+   handle_info/2,
+   handle_cast/2,
+   code_change/3
+]).
 
--export([notify_cluster_event/2]).
+-export([
+   notify_cluster_event/2
+]).
 
 -record(state, {
    event_listener :: pid(),

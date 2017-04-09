@@ -12,7 +12,11 @@
 
 -module(couch_replicator_ids).
 
--export([replication_id/1, replication_id/2, convert/1]).
+-export([
+    replication_id/1,
+    replication_id/2,
+    convert/1
+]).
 
 -include_lib("couch/include/couch_db.hrl").
 -include("couch_replicator_api_wrap.hrl").

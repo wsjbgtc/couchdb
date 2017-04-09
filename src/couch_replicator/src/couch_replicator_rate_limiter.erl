@@ -38,19 +38,29 @@
 
 
 -module(couch_replicator_rate_limiter).
+
 -behaviour(gen_server).
 
 
-% public API
+-export([
+   start_link/0
+]).
 
--export([start_link/0]).
--export([interval/1, max_interval/0, failure/1, success/1]).
+-export([
+   init/1,
+   terminate/2,
+   handle_call/3,
+   handle_info/2,
+   handle_cast/2,
+   code_change/3
+]).
 
-
-% gen_server callbacks
-
--export([init/1, handle_call/3, handle_info/2, handle_cast/2,
-         code_change/3, terminate/2]).
+-export([
+   interval/1,
+   max_interval/0,
+   failure/1,
+   success/1
+]).
 
 
 % Types

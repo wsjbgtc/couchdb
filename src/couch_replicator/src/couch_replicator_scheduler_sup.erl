@@ -11,17 +11,27 @@
 % the License.
 
 -module(couch_replicator_scheduler_sup).
+
 -behaviour(supervisor).
+
 -vsn(1).
+
 
 %% includes
 -include("couch_replicator.hrl").
 
 %% public api
--export([start_link/0, start_child/1, terminate_child/1]).
+-export([
+    start_link/0,
+    start_child/1,
+    terminate_child/1
+]).
 
 %% supervisor api
--export([init/1]).
+-export([
+   init/1
+]).
+
 
 %% public functions
 
